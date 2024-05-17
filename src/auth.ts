@@ -46,6 +46,34 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
           throw new CredentialsSignin({ cause: 'Invalid credentials' })
         }
       }
+    }),
+    CredentialProvider({
+      id: 'oneTap',
+      name: 'oneTap',
+      // credentials: {
+      //   credential: { type: 'text' }
+      // },
+      authorize: async (credentials) => {
+        const { email, name, picture: image, kid } = credentials as any
+        const user: any = await getUser(email as string)
+        if (user) {
+          return {
+            name,
+            email,
+            id: user._id,
+            image
+          }
+        }
+        else {
+          const addUser = await postUser(name, email, kid)
+          return {
+            name,
+            email,
+            id: addUser._id,
+            image
+          }
+        }
+      }
     })
   ],
 
@@ -57,15 +85,15 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
           const { email, name, image, id } = user
           await connectDB()
           const userAlreadyExists = await getUser(email as string)
-          if(!userAlreadyExists) {
+          if (!userAlreadyExists) {
             await googlePostUser(name as string, email as string, image as string, id as string)
           }
           return true
-        } catch (error) { 
-          throw new AuthError({cause: 'Error creating user'})
+        } catch (error) {
+          throw new AuthError({ cause: 'Error creating user' })
         }
       }
-        return true
+      return true
     }
 
   },
